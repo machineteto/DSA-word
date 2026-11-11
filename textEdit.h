@@ -90,15 +90,11 @@ void textEdit::undo() {
 		return;
 
 	action a = undoStack.pop();
-	lineNode* p = doc.getLine(a.line);
-
-	if (p == nullptr) {
-		undoStack.push(a);
-		return;
-	}
 
 	if (a.type == INSERT_CHAR) {
-		if (a.column < 0 || a.column + a.content.length() > p->data.length()) {
+		lineNode* p = doc.getLine(a.line);
+
+		if (p == nullptr || a.column < 0 || a.column + a.content.length() > p->data.length()) {
 			undoStack.push(a);
 			return;
 		}
@@ -107,13 +103,52 @@ void textEdit::undo() {
 		cur.setPosition(a.line, a.column, doc);
 	}
 	else if (a.type == DELETE_CHAR) {
-		if (a.column < 0 || a.column > p->data.length()) {
+		lineNode* p = doc.getLine(a.line);
+
+		if (p == nullptr ||a.column < 0 || a.column > p->data.length()) {
 			undoStack.push(a);
 			return;
 		}
 
 		p->data.insert(a.column, a.content);
 		cur.setPosition(a.line, a.column + a.content.length(), doc);
+	}
+	else if (a.type == INSERT_LINE) {
+		if (a.line < 0 || a.line >= doc.getLineCount()) {
+			undoStack.push(a);
+			return;
+		}
+
+		if (doc.getLineCount() == 1) {
+			lineNode* p = doc.getLine(0);
+			p->data = "";
+		}
+		else {
+			doc.deleteLine(a.line);
+		}
+
+		int newLine = a.line;
+
+		if (newLine >= doc.getLineCount())
+			newLine = doc.getLineCount() - 1;
+
+		cur.setPosition(newLine, 0, doc);
+	}
+	else if (a.type == DELETE_LINE) {
+		if (a.line < 0 || a.line > doc.getLineCount()) {
+			undoStack.push(a);
+			return;
+		}
+
+		if (doc.getLineCount() == 1) {
+			lineNode* p = doc.getLine(0);
+			p->data = a.content;
+		}
+		else {
+			doc.insertLine(a.line, a.content);
+		}
+
+		cur.setPosition(a.line, 0, doc);
 	}
 
 	redoStack.push(a);
@@ -123,15 +158,11 @@ void textEdit::redo() {
 		return;
 
 	action a = redoStack.pop();
-	lineNode* p = doc.getLine(a.line);
-
-	if (p == nullptr) {
-		redoStack.push(a);
-		return;
-	}
 
 	if (a.type == INSERT_CHAR) {
-		if (a.column < 0 || a.column > p->data.length()) {
+		lineNode* p = doc.getLine(a.line);
+
+		if (p == nullptr || a.column < 0 || a.column > p->data.length()) {
 			redoStack.push(a);
 			return;
 		}
@@ -140,7 +171,9 @@ void textEdit::redo() {
 		cur.setPosition(a.line, a.column + a.content.length(), doc);
 	}
 	else if (a.type == DELETE_CHAR) {
-		if (a.column < 0 || a.column + a.content.length() > p->data.length()) {
+		lineNode* p = doc.getLine(a.line);
+
+		if (p == nullptr || a.column < 0 || a.column + a.content.length() > p->data.length()) {
 			redoStack.push(a);
 			return;
 		}
@@ -148,8 +181,90 @@ void textEdit::redo() {
 		p->data.erase(a.column, a.content.length());
 		cur.setPosition(a.line, a.column, doc);
 	}
+	else if (a.type == INSERT_LINE) {
+		if (a.line < 0 || a.line > doc.getLineCount()) {
+			redoStack.push(a);
+			return;
+		}
+
+		if (doc.getLineCount() == 1 && doc.getLine(0)->data == "") {
+			doc.getLine(0)->data = a.content;
+		}
+		else {
+			doc.insertLine(a.line, a.content);
+		}
+
+		cur.setPosition(a.line, 0, doc);
+	}
+	else if (a.type == DELETE_LINE) {
+		if (a.line < 0 || a.line >= doc.getLineCount()) {
+			redoStack.push(a);
+			return;
+		}
+
+		if (doc.getLineCount() == 1) {
+			lineNode* p = doc.getLine(0);
+			p->data = "";
+		}
+		else {
+			doc.deleteLine(a.line);
+		}
+
+		int newLine = a.line;
+
+		if (newLine >= doc.getLineCount())
+			newLine = doc.getLineCount() - 1;
+
+		cur.setPosition(newLine, 0, doc);
+	}
 
 	undoStack.push(a);
+}
+
+void textEdit::insertLine(string text) {
+	int l = cur.getLine();
+
+	if (doc.getLineCount() == 1) {
+
+		lineNode* p = doc.getLine(0);
+
+		if (p->data == "") {
+			p->data = text;
+			undoStack.push(action(INSERT_LINE, 0, 0, text));
+			redoStack.clear();
+			cur.setPosition(0, 0, doc);
+			return;
+		}
+	}
+
+	int newLine = l + 1;
+	doc.insertLine(newLine, text);
+	undoStack.push(action(INSERT_LINE, newLine, 0, text));
+	redoStack.clear();
+	cur.setPosition(newLine, 0, doc);
+}
+
+void textEdit::deleteLine() {
+	int l = cur.getLine();
+	lineNode* p = doc.getLine(l);
+
+	if (p == nullptr) {
+		return;
+	}
+
+	string deleted = p->data;
+
+	doc.deleteLine(l);
+
+	undoStack.push(action(DELETE_LINE, l, 0, deleted));
+	redoStack.clear();
+	
+	int newline = l;
+
+	if (newline >= doc.getLineCount())
+		newline = doc.getLineCount() - 1;
+
+	cur.setPosition(newline, 0, doc);
 }
 
 void textEdit::display() {
