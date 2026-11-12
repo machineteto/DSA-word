@@ -44,8 +44,9 @@ void cursor::moveUp(textDoc& doc) {
 }
 
 void cursor::moveDown(textDoc& doc) {
-	if (line + 1 >= doc.getLineCount())
+	if (line + 1 >= doc.getLineCount() || doc.getLineCount() == 0)
 		return;
+
 	line++;
 	lineNode* p = doc.getLine(line);
 
@@ -74,6 +75,9 @@ void cursor::moveRight(textDoc& doc) {
 
 	lineNode* p = doc.getLine(line);
 
+	if (p == nullptr)
+		return;
+
 	if (column < p->data.length())
 		column++;
 	else if (line + 1 < doc.getLineCount()) {
@@ -101,7 +105,7 @@ void cursor::setPosition(int l, int c, textDoc& doc) {
 	column = c;
 
 	if (column < 0)
-		column = c;
+		column = 0;
 
 	if (column > p->data.length())
 		column = p->data.length();
