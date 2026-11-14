@@ -13,7 +13,8 @@ enum actionType {
     CUT_LINES,
     PASTE_LINES,
     INSERT_TEXT,
-    DELETE_TEXT
+    DELETE_TEXT,
+    REPLACE_TEXT        // MOI: thay the chuoi
 };
 
 class action {
@@ -28,6 +29,12 @@ public:
     bool oldHasClipboard;
     bool newHasClipboard;
 
+
+    string newContent = "";  // chuoi moi (REPLACE_TEXT: content = chuoi cu)
+    bool reuse = false;      // thao tac "dung lai" dong rong duy nhat?
+    int groupSize = 1;       // so action undo/redo cung luc
+
+
     //constructor
     action(actionType t = INSERT_CHAR, int l = 0, int c = 0, string text = "", string oldClip = "", string newClip = "", bool oldHas = false, bool newHas = false) {
         type = t;
@@ -41,3 +48,8 @@ public:
         newHasClipboard = newHas;
     }
 };
+
+
+
+
+
