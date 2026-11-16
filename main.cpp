@@ -1,4 +1,6 @@
 #include "textEdit.h"
+#include "editorMode.h"   // MOI: che do Normal/Insert/Visual/Command
+#include "editorUI.h"     // MOI: giao dien console
 
 int main() {
     textEdit editor;
@@ -102,5 +104,32 @@ int main() {
     cout << "\n===== OPEN file khong ton tai =====\n";
     editor.openFile("khongco.txt");
 
+    // =====================================================
+    // MOI: chuyen sang trinh soan thao kieu Vim (tren chinh
+    // van ban `editor` o tren, dang la noi dung test.txt)
+    // =====================================================
+    cout << "\n===== VIM EDITOR =====\n";
+    cout << "Phim tat: h j k l | i | Esc | dd | yy | P | u | Ctrl+R | v | :w :q :wq :q!\n";
+    cout << "Nhan Enter de bat dau...";
+    cin.get();
+
+    editorMode mode;
+    editorUI ui;
+
+    bool running = true;
+    while (running) {
+        ui.render(editor, mode);
+
+        int key = ui.readKey();
+        if (key < 0)
+            break;
+
+        running = mode.handleKey(key, editor);
+
+        if (mode.consumePause())
+            ui.pause();
+    }
+
+    ui.clearScreen();
     return 0;
 }

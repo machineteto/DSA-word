@@ -74,7 +74,21 @@ public:
 	bool saveFile();
 	bool saveFileAs(string path);
 
-	
+	//---- Getter cho giao dien (editorUI / editorMode) ----
+	int getLineCount() { return doc.getLineCount(); }
+	string getLineText(int index) {
+		lineNode* p = doc.getLine(index);
+		return p ? p->data : "";
+	}
+	int getCursorLine() { return cur.getLine(); }
+	int getCursorColumn() { return cur.getColumn(); }
+	void setCursor(int l, int c) { cur.setPosition(l, c, doc); }
+	bool isModified() { return modified; }
+	bool hasFileName() { return file.hasFileName(); }
+	string getFileName() { return file.getFileName(); }
+	bool canUndo() { return !undoStack.isEmpty(); }
+	bool canRedo() { return !redoStack.isEmpty(); }
+	bool hasClip() { return hasClipBoard; }
 };
 
 void textEdit::insertLinesAt(int position, string text, bool reuseFirst) {
